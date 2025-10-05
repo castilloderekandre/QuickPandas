@@ -1,6 +1,9 @@
 import pandas as pd
+pd.set_option('future.no_silent_downcasting', True)
+
 import re
 import math
+import numpy as np
 
 schema = [ 'Mileage' ]
 retail_report = pd.DataFrame(
@@ -22,31 +25,6 @@ retail_report = pd.DataFrame(
             'AGE': []
         })
 
-def parse_expense(vin, source_expenses_report):
-    expenses_report = source_expenses_report.fillna(0)
-    distribution_account = expenses_report.iloc[3]
-    expense_list = [0, 0, 0]
-    expenses = 0
-    for i in range(len(distribution_account)):
-        account = distribution_account.iloc[i]
-        if isinstance(account, (int, float)):
-            account = math.trunc(account)
-            account = str(account)
-
-        if not vin in account:
-            continue
-
-        expenses += expenses_report.iloc[9].iloc[i]
-        expenses += expenses_report.iloc[10].iloc[i]
-        expenses += expenses_report.iloc[11].iloc[i]
-        
-        expense_list[0] = expenses_report.iloc[12].iloc[i]
-        expense_list[1] = expenses
-        expense_list[2] = expense_list[0] + expense_list[1]
-
-    return expense_list
-
-
 def parse_description(description):
     schema_elements = []
     for identifier in schema:
@@ -63,31 +41,34 @@ def parse_description(description):
 
 def parse_product_name(name):
     breakdown = []
-    pattern = r"Truck:(\d+)\s+(\w+)\s+((?:\w+\s)+)\(VIN#.+\)"
+    pattern = r":(\d+)\s+(\w+)\s+(.+)\(VIN#.+\)"
     capture_groups = re.search(pattern, name)
     if capture_groups:
         breakdown.extend(list(capture_groups.groups()))
     else:
-        breakdown = ['', '', '']
+        breakdown = ['-', '-', '-']
         
     return breakdown
 
 def parse_product(index, product, expenses):
+    vin = product.SKU[-6:]
+    inventory = product['Purchase Cost']
+    expenses = sum(expenses.loc[vin])
     product_series = [
-        product.SKU[-6:], 
-        *parse_product_name(product['Product/Service Name']), 
-        *parse_description(product['Sales Description']),
-        None,
-        *parse_expense(product.SKU[-6:], expenses),
-        None,
-        None,
-        product['Sales Price / Rate'],
-        None,
-        None,
-        f'=TODAY() - N{index+2}',
+        vin, # LAST 6 OF VIN
+        *parse_product_name(product['Product/Service Name']), # YEAR, MAKE, MODEL
+        *parse_description(product['Sales Description']), # MILEAGE (BASED ON SCHEMA)
+        None, # LOCATION
+        inventory, # INVENTORY
+        expenses, # EXPENSES
+        inventory + expenses, # TOTAL INVESTED
+        None, # MISC
+        None, # SOURCED FROM
+        product['Sales Price / Rate'], # SRP
+        None, # DATE RECEIVED
+        None, # OPEN INVOICE
+        f'=TODAY() - N{index+2}', # AGE
     ]
-
-    parse_expense(product_series[0], expenses)
 
     return product_series
 
@@ -103,9 +84,22 @@ def on_import():
     expenses = pd.read_excel('./Reports/Katy Truck and Equipment Sales LLC_CURRENT INVENTORY.xlsx')
     products_and_services = pd.read_excel('./Reports/ProductServiceList.xls')
 
-    # print(expenses)
-
     products = products_and_services.loc[products_and_services.Type == 'Inventory', ['Product/Service Name', 'Sales Description', 'SKU', 'Sales Price / Rate', 'Purchase Cost']]
+
+    expenses = expenses.loc[[3, 9, 10, 11]]
+    expenses = expenses.T
+    expenses.columns = expenses.iloc[0]
+    expenses = expenses[1:-1]
+    expenses.set_index('Distribution account', inplace=True)
+
+    def clean_index(index):
+        return str(index).split('.')[0]
+
+    expenses.index = expenses.index.map(clean_index)
+
+    expenses.fillna(0, inplace=True)
+    expenses = expenses.infer_objects(copy=False)
+
     create_retail_report(products, expenses)
     retail_report.to_excel('./Reports/retail_report.xlsx')
 
