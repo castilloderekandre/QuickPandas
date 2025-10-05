@@ -4,9 +4,10 @@ pd.set_option('future.no_silent_downcasting', True)
 import re
 import math
 import numpy as np
+from pathlib import Path
 
 schema = [ 'Mileage' ]
-retail_report = pd.DataFrame(
+retail_inventory = pd.DataFrame(
         {
             'LAST 6 OF VIN': [], 
             'YEAR': [], 
@@ -73,14 +74,23 @@ def parse_product(index, product, expenses):
     return product_series
 
 def create_retail_report(products, expenses):
-    global retail_report
+    global retail_inventory
     for index, product in products.iterrows():
         parsed_product = parse_product(index, product, expenses)
-        retail_report.loc[len(retail_report)] = parsed_product
+        retail_inventory.loc[len(retail_inventory)] = parsed_product
 
+def update_retail_inventory(old_retail_inventory):
+    global retail_inventory
+    retail_inventory['LOCATION'] = old_retail_inventory['LOCATION']
+    retail_inventory['MISC.'] = old_retail_inventory['MISC.']
+    retail_inventory['SOURCED FROM'] = old_retail_inventory['SOURCED FROM']
+    retail_inventory['DATE RECEIVED'] = old_retail_inventory['DATE RECEIVED']
+    retail_inventory['OPEN INVOICE?'] = old_retail_inventory['OPEN INVOICE?']
 
 
 def on_import():
+    global retail_inventory
+
     expenses = pd.read_excel('./Reports/Katy Truck and Equipment Sales LLC_CURRENT INVENTORY.xlsx')
     products_and_services = pd.read_excel('./Reports/ProductServiceList.xls')
 
@@ -101,6 +111,13 @@ def on_import():
     expenses = expenses.infer_objects(copy=False)
 
     create_retail_report(products, expenses)
-    retail_report.to_excel('./Reports/retail_report.xlsx')
+    
+    old_retail_inventory_path = Path('./Reports/retail_inventory.xlsx')
+
+    if old_retail_inventory_path.exists():
+        old_retail_inventory = pd.read_excel(old_retail_inventory_path)
+        update_retail_inventory(old_retail_inventory)
+
+    retail_inventory.to_excel('./Reports/retail_inventory.xlsx')
 
 on_import()
