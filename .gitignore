@@ -1,1 +1,7 @@
 Reports/
+.git/
+.hypothesis/
+.venv/
+test-data.xml
+test_stata.dta
+
