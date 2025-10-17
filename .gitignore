@@ -2,6 +2,7 @@ Reports/
 .git/
 .hypothesis/
 .venv/
+retail_inventory_new.xlsx
 test-data.xml
 test_stata.dta
 

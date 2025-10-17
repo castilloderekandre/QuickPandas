@@ -7,35 +7,8 @@ import numpy as np
 import customtkinter as ctk
 
 from pathlib import Path
-from tkinter import filedialog
 from CTkMessagebox import CTkMessagebox
 
-class FileHandler:
-    def __init__(self):
-        self.paths = {}
-
-    def select_file(self, key, label):
-        path = filedialog.askopenfilename(
-            title = 'Select Excel File',
-            filetypes=[('Excel files', '*.xls'), ('Excel files', '*.xlsx')]
-        )
-
-        if not path:
-            return
-
-        self.paths[key] = Path(path)
-        label.configure(text=self.paths[key].name)
-
-    def select_directory(self, key):
-        path = filedialog.asksaveasfile(
-            title = 'Save As',
-            filetypes=[('Excel files', '*.xlsx')]
-        )
-
-        if not path:
-            return
-
-        self.paths[key] = path
 
 class App(ctk.CTk):
     def __init__(self):
@@ -89,92 +62,8 @@ class App(ctk.CTk):
 
         #
         self.schema = [ 'Mileage' ]
-        self.retail_inventory = pd.DataFrame(
-            {
-                'LAST 6 OF VIN': [], 
-                'YEAR': [], 
-                'MAKE': [], 
-                'MODEL': [], 
-                'MILEAGE': [], 
-                'LOCATION': [], 
-                'INVENTORY ($)': [], 
-                'EXPENSES ($)': [], 
-                'TOTAL INVESTED ($)': [], 
-                'MISC.': [], 
-                'SOURCED FROM': [], 
-                'SRP ($)': [], 
-                'DATE RECEIVED': [], 
-                'OPEN INVOICE?': [], 
-                'AGE': []
-            })
 
         self.update_idletasks()
-
-    def parse_description(self, description):
-        schema_elements = []
-        for identifier in self.schema:
-            description = str(description)
-            index = description.find(identifier) 
-
-            if (index == -1):
-                schema_elements.append('Incorrect Schema')
-                continue
-
-            index += len(identifier) + 1
-
-            end_index = description.find('\n', index)
-
-            if (end_index == -1):
-                end_index = len(description)
-            
-            schema_elements.append(description[index:end_index])
-
-        return schema_elements
-
-    def parse_product_name(self, name):
-        breakdown = []
-        pattern = r":(\d+)\s+(\w+)\s+(.+)\(VIN#.+\)"
-        capture_groups = re.search(pattern, name)
-        if capture_groups:
-            breakdown.extend(list(capture_groups.groups()))
-        else:
-            breakdown = ['-', '-', '-']
-            
-        return breakdown
-
-    def parse_product(self, index, product, expenses):
-        vin = product.SKU[-6:]
-        inventory = product['Purchase Cost']
-        expenses = sum(expenses.loc[vin])
-        product_series = [
-            vin, # LAST 6 OF VIN
-            *self.parse_product_name(product['Product/Service Name']), # YEAR, MAKE, MODEL
-            *self.parse_description(product['Sales Description']), # MILEAGE (BASED ON SCHEMA)
-            None, # LOCATION
-            inventory, # INVENTORY
-            expenses, # EXPENSES
-            inventory + expenses, # TOTAL INVESTED
-            None, # MISC
-            None, # SOURCED FROM
-            product['Sales Price / Rate'], # SRP
-            None, # DATE RECEIVED
-            None, # OPEN INVOICE
-            f'=TODAY() - N{index+2}', # AGE
-        ]
-
-        return product_series
-
-    def create_retail_report(self, products, expenses):
-        for index, product in products.iterrows():
-            parsed_product = self.parse_product(index, product, expenses)
-            self.retail_inventory.loc[len(self.retail_inventory)] = parsed_product
-
-    def update_retail_inventory(self, old_retail_inventory):
-        self.retail_inventory['LOCATION'] = old_retail_inventory['LOCATION']
-        self.retail_inventory['MISC.'] = old_retail_inventory['MISC.']
-        self.retail_inventory['SOURCED FROM'] = old_retail_inventory['SOURCED FROM']
-        self.retail_inventory['DATE RECEIVED'] = old_retail_inventory['DATE RECEIVED']
-        self.retail_inventory['OPEN INVOICE?'] = old_retail_inventory['OPEN INVOICE?']
 
     def show_popup(self, report):
         CTkMessagebox(title="Info", message="A file has not been selected. Cannot create report!") 
