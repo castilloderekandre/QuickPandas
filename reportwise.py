@@ -1,10 +1,14 @@
 import pandas as pd
 pd.set_option('future.no_silent_downcasting', True)
 
-import re
 import math
 import numpy as np
 import customtkinter as ctk
+
+from file_handler import FileHandler
+from file_io import FileIO
+from data_transform import DataTransform
+from report_handler import ReportHandler
 
 from pathlib import Path
 from CTkMessagebox import CTkMessagebox
@@ -68,52 +72,6 @@ class App(ctk.CTk):
     def show_popup(self, report):
         CTkMessagebox(title="Info", message="A file has not been selected. Cannot create report!") 
 
-    def main(self):
-        self.retail_inventory = pd.DataFrame(
-            {
-                'LAST 6 OF VIN': [], 
-                'YEAR': [], 
-                'MAKE': [], 
-                'MODEL': [], 
-                'MILEAGE': [], 
-                'LOCATION': [], 
-                'INVENTORY ($)': [], 
-                'EXPENSES ($)': [], 
-                'TOTAL INVESTED ($)': [], 
-                'MISC.': [], 
-                'SOURCED FROM': [], 
-                'SRP ($)': [], 
-                'DATE RECEIVED': [], 
-                'OPEN INVOICE?': [], 
-                'AGE': []
-            })
-
-
-        expenses = pd.read_excel(self.filehandler.paths[self.EXPENSES_KEY])
-        products_and_services = pd.read_excel(self.filehandler.paths[self.PRODUCTS_KEY])
-
-        products = products_and_services.loc[products_and_services.Type == 'Inventory', ['Product/Service Name', 'Sales Description', 'SKU', 'Sales Price / Rate', 'Purchase Cost']]
-
-        expenses = expenses.loc[[3, 9, 10, 11]]
-        expenses = expenses.T
-        expenses.columns = expenses.iloc[0]
-        expenses = expenses[1:-1]
-        expenses.set_index('Distribution account', inplace=True)
-
-        def clean_index(index):
-            return str(index).split('.')[0]
-
-        expenses.index = expenses.index.map(clean_index)
-
-        expenses.fillna(0, inplace=True)
-        expenses = expenses.infer_objects(copy=False)
-
-        self.create_retail_report(products, expenses)
-        
-        if self.INVENTORY_KEY in self.filehandler.paths:
-            old_retail_inventory = pd.read_excel(self.filehandler.paths[self.INVENTORY_KEY])
-            self.update_retail_inventory(old_retail_inventory)
-
     def save_as(self):
         if not self.PRODUCTS_KEY in self.filehandler.paths:
             self.show_popup('Products/Services')
@@ -135,9 +93,22 @@ class App(ctk.CTk):
         if not self.OUTPUT_KEY in self.filehandler.paths:
             return
 
-        self.main()
+        inventory = FileIO.read_file(self.filehandler.paths[ self.PRODUCTS_KEY ])
+        expenses = FileIO.read_file(self.filehandler.paths[ self.EXPENSES_KEY ])
+
+
+        inventory = DataTransform.clean_inventory(inventory)
+        expenses = DataTransform.clean_expenses(expenses)
+
+        retail_inventory = ReportHandler.create_retail_inventory(inventory, expenses)
         
-        self.retail_inventory.to_excel(self.filehandler.paths[self.OUTPUT_KEY].name)
+        if self.INVENTORY_KEY in self.filehandler.paths:
+            old_retail_inventory = FileIO.read_file(self.filehandler.paths[ self.INVENTORY_KEY ], no_strip=True)
+            ReportHandler.copy_manual_fields(retail_inventory, old_retail_inventory)
+        
+        FileIO.write_file(retail_inventory, self.filehandler.paths[ self.OUTPUT_KEY ].name)
+        
+        del self.filehandler.paths[ self.OUTPUT_KEY ]
 
 
 app = App()

@@ -21,19 +21,18 @@ class ReportHandler:
         }
 
     def empty_inventory_schema():
-        empty_inventory = {field: [] for field in retail_inventory_fields}
+        empty_inventory = {field: [] for field in ReportHandler.retail_inventory_fields}
         return empty_inventory
 
-    def create_retail_report(inventory: pd.DataFrame, expenses: pd.DataFrame):
-        retail_inventory = pd.DataFrame(empty_inventory_schema())
+    def create_retail_inventory(inventory: pd.DataFrame, expenses: pd.DataFrame):
+        retail_inventory = pd.DataFrame(ReportHandler.empty_inventory_schema())
 
         for index, product in inventory.iterrows():
-            parsed_product = DataTransform.parse_product(index, product, expenses)
-            retail_inventory.loc[len(retail_inventory)] = parsed_product
+            retail_inventory.loc[len(retail_inventory)] = DataTransform.parse_product(index, product, expenses)
 
         return retail_inventory
 
-    def copy_manual_fields(old_retail_inventory: pd.DataFrame):
-        for field, manual in self.retail_inventory_fields:
+    def copy_manual_fields(retail_inventory, old_retail_inventory: pd.DataFrame):
+        for field, manual in ReportHandler.retail_inventory_fields:
             if manual:
-                self.retail_inventory[field] = old_retail_inventory[field]
+                retail_inventory[field] = old_retail_inventory[field]
