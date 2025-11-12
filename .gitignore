@@ -1,7 +1,14 @@
 Reports/
 .git/
 .hypothesis/
+build/
+dist/
+logs/
 .venv/
+reportwise.spec
+requirements.txt
+test_stata.dta
+test-data.xml
 __pycache__/
 retail_inventory_new.xlsx
 test-data.xml

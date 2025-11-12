@@ -20,19 +20,28 @@ class ReportHandler:
             'AGE': False,
         }
 
-    def empty_inventory_schema():
+    @classmethod
+    def empty_inventory_schema(cls):
         empty_inventory = {field: [] for field in ReportHandler.retail_inventory_fields}
         return empty_inventory
 
-    def create_retail_inventory(inventory: pd.DataFrame, expenses: pd.DataFrame):
-        retail_inventory = pd.DataFrame(ReportHandler.empty_inventory_schema())
+    @classmethod
+    def create_retail_inventory(cls, inventory: pd.DataFrame, expenses: pd.DataFrame):
+        retail_inventory = pd.DataFrame(cls.empty_inventory_schema())
 
         for index, product in inventory.iterrows():
             retail_inventory.loc[len(retail_inventory)] = DataTransform.parse_product(index, product, expenses)
 
         return retail_inventory
+         
+    @classmethod
+    def copy_manual_fields(cls, retail_inventory: pd.DataFrame, old_retail_inventory: pd.DataFrame):
+      for vin in old_retail_inventory['LAST 6 OF VIN']:
+        if vin in retail_inventory['LAST 6 OF VIN'].values:
+          old_value = old_retail_inventory.loc[old_retail_inventory['LAST 6 OF VIN'] == vin].iloc[0]
 
-    def copy_manual_fields(retail_inventory, old_retail_inventory: pd.DataFrame):
-        for field, manual in ReportHandler.retail_inventory_fields:
-            if manual:
-                retail_inventory[field] = old_retail_inventory[field]
+          for field, manual_field in cls.retail_inventory_fields.items():
+            if manual_field:
+              retail_inventory.loc[
+                 retail_inventory['LAST 6 OF VIN'] == vin, field
+                ] = old_value[field]

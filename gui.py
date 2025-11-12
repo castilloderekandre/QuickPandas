@@ -1,20 +1,16 @@
 import pandas as pd
 pd.set_option('future.no_silent_downcasting', True)
 
-import math
-import numpy as np
 import customtkinter as ctk
+from CTkMessagebox import CTkMessagebox
 
 from file_handler import FileHandler
 from file_io import FileIO
 from data_transform import DataTransform
 from report_handler import ReportHandler
+from report_style import ReportStyle
 
-from pathlib import Path
-from CTkMessagebox import CTkMessagebox
-
-
-class App(ctk.CTk):
+class GUI(ctk.CTk):
     def __init__(self):
         super().__init__()
 
@@ -73,43 +69,71 @@ class App(ctk.CTk):
         CTkMessagebox(title="Info", message="A file has not been selected. Cannot create report!") 
 
     def save_as(self):
-        if not self.PRODUCTS_KEY in self.filehandler.paths:
-            self.show_popup('Products/Services')
-            return
 
-        if not self.EXPENSES_KEY in self.filehandler.paths:
-            self.show_popup('Expenses')
-            return
+      if not self._validate_required_files():
+        return
 
-        if not self.INVENTORY_KEY in self.filehandler.paths:
-            msg = CTkMessagebox(title='Warning', message='Previous retail inventory file not selected. Manual changes will not carry over to new file', icon='warning', option_1='Continue', option_2='Cancel')
-            response = msg.get()
+      if not self._select_output_directory():
+        return
 
-            if response=='Cancel':
-                return
+      retail_inventory = self._prepare_report_data()
 
-        self.filehandler.select_directory(self.OUTPUT_KEY)
-
-        if not self.OUTPUT_KEY in self.filehandler.paths:
-            return
-
-        inventory = FileIO.read_file(self.filehandler.paths[ self.PRODUCTS_KEY ])
-        expenses = FileIO.read_file(self.filehandler.paths[ self.EXPENSES_KEY ])
+      if retail_inventory is None:
+        return
+      
+      self._finalize_output(retail_inventory)
+      
 
 
-        inventory = DataTransform.clean_inventory(inventory)
-        expenses = DataTransform.clean_expenses(expenses)
+    def _validate_required_files(self):
+      if not self.PRODUCTS_KEY in self.filehandler.paths:
+        self.show_popup('Products/Services')
+        return
 
-        retail_inventory = ReportHandler.create_retail_inventory(inventory, expenses)
-        
-        if self.INVENTORY_KEY in self.filehandler.paths:
-            old_retail_inventory = FileIO.read_file(self.filehandler.paths[ self.INVENTORY_KEY ], no_strip=True)
-            ReportHandler.copy_manual_fields(retail_inventory, old_retail_inventory)
-        
-        FileIO.write_file(retail_inventory, self.filehandler.paths[ self.OUTPUT_KEY ].name)
-        
-        del self.filehandler.paths[ self.OUTPUT_KEY ]
+      if not self.EXPENSES_KEY in self.filehandler.paths:
+        self.show_popup('Expenses')
+        return
 
+      if not self.INVENTORY_KEY in self.filehandler.paths:
+        msg = CTkMessagebox(
+            title='Warning',
+            message='Previous retail inventory file not selected. Manual changes will not carry over to new file',
+            icon='warning',
+            option_1='Continue',
+            option_2='Cancel'
+        )
 
-app = App()
-app.mainloop()
+        if msg.get() == 'Cancel':
+          return False
+
+      return True
+
+    def _select_output_directory(self):
+      self.filehandler.select_directory(self.OUTPUT_KEY)
+      return self.OUTPUT_KEY in self.filehandler.paths
+
+    def _prepare_report_data(self):
+      inventory = FileIO.read_file(self.filehandler.paths[ self.PRODUCTS_KEY ])
+      expenses = FileIO.read_file(self.filehandler.paths[ self.EXPENSES_KEY ])
+
+      inventory = DataTransform.clean_inventory(inventory)
+      expenses = DataTransform.clean_expenses(expenses)
+
+      retail_inventory = ReportHandler.create_retail_inventory(inventory, expenses)
+      
+      new_index = [num for num in range(1, len(retail_inventory) + 1)]
+
+      retail_inventory.index = new_index
+
+      if self.INVENTORY_KEY in self.filehandler.paths:
+        old_retail_inventory = FileIO.read_file(self.filehandler.paths[ self.INVENTORY_KEY ], no_strip=True)
+        ReportHandler.copy_manual_fields(retail_inventory, old_retail_inventory)
+
+      return retail_inventory
+    
+    def _finalize_output(self, retail_inventory):
+      output_path = self.filehandler.paths[ self.OUTPUT_KEY ]
+
+      FileIO.write_file(retail_inventory, self.filehandler.paths[ self.OUTPUT_KEY ])
+      ReportStyle.style_sheet(self.filehandler.paths[ self.OUTPUT_KEY ])
+      del self.filehandler.paths[ self.OUTPUT_KEY ]

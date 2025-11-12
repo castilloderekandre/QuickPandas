@@ -1,5 +1,6 @@
 from pathlib import Path
 from tkinter import filedialog
+import sys
 
 class FileHandler:
     def __init__(self):
@@ -13,17 +14,25 @@ class FileHandler:
 
         if not path:
             return
+        
+        if getattr(sys, 'frozen', False):
+            base_dir = Path(sys.executable).parent
+        else:
+            base_dir = Path(__file__).resolve().parent
 
-        self.paths[key] = Path(path)
+        
+            
+        self.paths[key] = Path(path).absolute()
         label.configure(text=self.paths[key].name)
 
     def select_directory(self, key):
-        path = filedialog.asksaveasfile(
+        path = filedialog.asksaveasfilename(
             title = 'Save As',
+            defaultextension='.xlsx',
             filetypes=[('Excel files', '*.xlsx')]
         )
 
         if not path:
             return
 
-        self.paths[key] = path
+        self.paths[key] = Path(path).absolute()
