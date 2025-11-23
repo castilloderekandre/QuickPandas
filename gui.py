@@ -1,20 +1,16 @@
 import pandas as pd
 pd.set_option('future.no_silent_downcasting', True)
 
-import math
-import numpy as np
 import customtkinter as ctk
+from CTkMessagebox import CTkMessagebox
 
 from file_handler import FileHandler
 from file_io import FileIO
-from data_transform import DataTransform
-from report_handler import ReportHandler
+from data_processor import DataProcessor
+from report import Report
+from report_style import ReportStyle
 
-from pathlib import Path
-from CTkMessagebox import CTkMessagebox
-
-
-class App(ctk.CTk):
+class GUI(ctk.CTk):
     def __init__(self):
         super().__init__()
 
@@ -69,47 +65,53 @@ class App(ctk.CTk):
 
         self.update_idletasks()
 
-    def show_popup(self, report):
+    def show_popup(self):
         CTkMessagebox(title="Info", message="A file has not been selected. Cannot create report!") 
 
     def save_as(self):
-        if not self.PRODUCTS_KEY in self.filehandler.paths:
-            self.show_popup('Products/Services')
-            return
+      if not self._validate_required_files():
+        return
 
-        if not self.EXPENSES_KEY in self.filehandler.paths:
-            self.show_popup('Expenses')
-            return
+      if not self._select_output_directory():
+        return
 
-        if not self.INVENTORY_KEY in self.filehandler.paths:
-            msg = CTkMessagebox(title='Warning', message='Previous retail inventory file not selected. Manual changes will not carry over to new file', icon='warning', option_1='Continue', option_2='Cancel')
-            response = msg.get()
+      self._export_report()
+      
+    def _validate_required_files(self):
+      if not self.PRODUCTS_KEY in self.filehandler.paths:
+        self.show_popup()
+        return
 
-            if response=='Cancel':
-                return
+      if not self.EXPENSES_KEY in self.filehandler.paths:
+        self.show_popup()
+        return
 
-        self.filehandler.select_directory(self.OUTPUT_KEY)
+      if not self.INVENTORY_KEY in self.filehandler.paths:
+        msg = CTkMessagebox(
+            title='Warning',
+            message='Previous retail inventory file not selected. Manual changes will not carry over to new file',
+            icon='warning',
+            option_1='Continue',
+            option_2='Cancel'
+        )
 
-        if not self.OUTPUT_KEY in self.filehandler.paths:
-            return
+        if msg.get() == 'Cancel':
+          return False
 
-        inventory = FileIO.read_file(self.filehandler.paths[ self.PRODUCTS_KEY ])
-        expenses = FileIO.read_file(self.filehandler.paths[ self.EXPENSES_KEY ])
+      return True
 
+    def _select_output_directory(self):
+      self.filehandler.select_directory(self.OUTPUT_KEY)
+      return self.OUTPUT_KEY in self.filehandler.paths
 
-        inventory = DataTransform.clean_inventory(inventory)
-        expenses = DataTransform.clean_expenses(expenses)
+    def _export_report(self):
+      report = Report(
+        self.filehandler.paths[ self.PRODUCTS_KEY ],
+        self.filehandler.paths[ self.EXPENSES_KEY ],
+        self.filehandler.paths.get(self.INVENTORY_KEY)
+      )
 
-        retail_inventory = ReportHandler.create_retail_inventory(inventory, expenses)
-        
-        if self.INVENTORY_KEY in self.filehandler.paths:
-            old_retail_inventory = FileIO.read_file(self.filehandler.paths[ self.INVENTORY_KEY ], no_strip=True)
-            ReportHandler.copy_manual_fields(retail_inventory, old_retail_inventory)
-        
-        FileIO.write_file(retail_inventory, self.filehandler.paths[ self.OUTPUT_KEY ].name)
-        
-        del self.filehandler.paths[ self.OUTPUT_KEY ]
+      report.generate()
+      report.to_file(self.filehandler.paths[ self.OUTPUT_KEY ])
 
-
-app = App()
-app.mainloop()
+      del self.filehandler.paths[ self.OUTPUT_KEY ]
