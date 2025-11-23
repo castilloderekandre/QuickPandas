@@ -1,6 +1,6 @@
 import pandas as pd
 from pathlib import Path
-from data_transform import DataTransform
+from data_processor import DataProcessor
 
 class FileIO:
     @classmethod
@@ -15,7 +15,7 @@ class FileIO:
             df = pd.read_excel(path, engine='openpyxl')
             return df
 
-        DataTransform.strip_formulas(path)
+        DataProcessor.strip_formulas(path)
 
         df = pd.read_excel(path, engine='openpyxl')
         return df

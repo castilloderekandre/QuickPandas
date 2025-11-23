@@ -3,7 +3,7 @@ import pandas as pd
 from openpyxl import load_workbook
 from pathlib import Path
 
-class DataTransform:
+class DataProcessor:
     inventory_fields = [
             'Product/Service Name', 
             'Sales Description', 
@@ -12,8 +12,12 @@ class DataTransform:
             'Purchase Cost'
         ]
 
-    @classmethod
-    def parse_description(cls, description, schema):
+    @staticmethod
+    def process_data(inventory: pd.DataFrame, expenses: pd.DataFrame):
+        pass
+
+    @staticmethod
+    def parse_description(description, schema):
         schema_elements = []
         for identifier in schema:
             description = str(description)
@@ -35,8 +39,8 @@ class DataTransform:
 
         return schema_elements
     
-    @classmethod
-    def parse_product_name(cls, name):
+    @staticmethod
+    def parse_product_name(name):
         breakdown = []
         pattern = r":(\d+)\s+(\w+)\s+(.+)\(VIN#.+\)"
         capture_groups = re.search(pattern, name)
@@ -47,10 +51,10 @@ class DataTransform:
             
         return breakdown
     
-    @classmethod
-    def parse_product(cls, index, product, expenses: pd.DataFrame):
-        schema = [ 'Mileage' ]
-        vin = product.SKU[-6:]
+    @staticmethod
+    def parse_product(index, product, expenses: pd.DataFrame):
+        schema: list[str] = [ 'Mileage' ]
+        vin: str = product.SKU[-6:]
         in_inventory = product['Purchase Cost']
         if vin not in expenses.index:
             total_expenses = 0
@@ -59,8 +63,8 @@ class DataTransform:
 
         product_series = [
             vin, # LAST 6 OF VIN
-            *DataTransform.parse_product_name(product['Product/Service Name']), # YEAR, MAKE, MODEL
-            *DataTransform.parse_description(product['Sales Description'], schema), # MILEAGE (BASED ON SCHEMA)
+            *DataProcessor.parse_product_name(product['Product/Service Name']), # YEAR, MAKE, MODEL
+            *DataProcessor.parse_description(product['Sales Description'], schema), # MILEAGE (BASED ON SCHEMA)
             None, # LOCATION
             in_inventory, # in_inventory
             total_expenses, # EXPENSES
@@ -75,19 +79,18 @@ class DataTransform:
 
         return product_series
     
-    @classmethod
-    def clean_inventory(cls, inventory: pd.DataFrame):
-        return inventory.loc[inventory.Type == 'Inventory', DataTransform.inventory_fields]
+    @staticmethod
+    def clean_inventory(inventory: pd.DataFrame):
+        return inventory.loc[inventory.Type == 'Inventory', DataProcessor.inventory_fields]
 
-    @classmethod
-    def clean_expenses(cls, expenses):
+    @staticmethod
+    def clean_expenses(expenses: pd.DataFrame):
         expenses = expenses[3:]
         expenses = expenses.T
-        expenses.iloc[0, 3] = 'Class'
+        expenses.iloc[0, 0] = 'Class'
         expenses.columns = expenses.iloc[0]
         expenses = expenses[1:-1]
         expenses.set_index('Class', inplace=True)
-
 
         def clean_index(index):
             return str(index).split('.')[0]
@@ -100,8 +103,27 @@ class DataTransform:
         expenses.index = expenses.index.map(clean_index)
         expenses.columns = expenses.columns.map(clean_column)
         
-        expense_name_list = ['Detailing', 'Parts & Supplies', 'Transport Expense', 'Truck Fuel', 'Truck Repairs & Maintenance']
-        existing_expense_name_list = []
+        expense_name_list: list[str] = []
+
+        cost_of_goods_sold_reached: bool = False
+        for series_name, _ in expenses.items():
+            series_name = str(series_name)
+            if not cost_of_goods_sold_reached:
+                if series_name == 'Cost of goods sold':
+                    cost_of_goods_sold_reached = True
+                continue
+
+            series_name_lower = str(series_name).lower()
+            
+            if series_name_lower == 'trucks purchased':
+                continue
+
+            if series_name_lower == 'total for cost of goods sold':
+                break
+            
+            expense_name_list.append(str(series_name))
+        
+        existing_expense_name_list: list[str] = []
         for expense_name in expense_name_list:
             if expense_name in expenses.columns:
                 existing_expense_name_list.append(expense_name)
@@ -112,11 +134,13 @@ class DataTransform:
 
         return expenses
 
-    @classmethod
-    def strip_formulas(cls, path: Path):
+    @staticmethod
+    def strip_formulas(path: Path):
         workbook = load_workbook(path, data_only=False)
         sheet = workbook.active
-
+        if not sheet:
+            return
+        
         pattern = re.compile(r"^=\(?([0-9.]+)\)?$")
          
         for row in sheet.iter_rows():
