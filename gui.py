@@ -112,6 +112,6 @@ class GUI(ctk.CTk):
       )
 
       report.generate()
-      report.to_file(self.filehandler.paths[ self.OUTPUT_KEY ])
+      report.save(self.filehandler.paths[ self.OUTPUT_KEY ])
 
       del self.filehandler.paths[ self.OUTPUT_KEY ]

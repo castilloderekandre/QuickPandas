@@ -16,7 +16,7 @@ def log_error_to_file(type, value, tb):
         log_file.write("\n")
 
 
-def show_exception_popup(type, value, tb):
+def show_exception_popup(type, value, tb) -> None:
     """
     Shows a popup through CTkMessagebox for an unhandled exception.
 

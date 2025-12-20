@@ -58,7 +58,6 @@ class Report:
 
     def to_file(self, output_path: Path):
       FileIO.write_file(self.retail_inventory, output_path)
-      ReportStyle.style_sheet(output_path)
 
     @classmethod
     def copy_manual_fields(cls, retail_inventory: pd.DataFrame, old_retail_inventory: pd.DataFrame):
@@ -74,3 +73,7 @@ class Report:
               retail_inventory.loc[
                   retail_inventory['LAST 6 OF VIN'] == vin, field
                 ] = old_value[field]
+              
+    def save(self, output_path: Path) -> None:
+      self.to_file(output_path)
+      ReportStyle.style_sheet(output_path)
