@@ -1,8 +1,8 @@
 import pandas as pd
 from pathlib import Path
-from data_processor import DataProcessor
-from file_io import FileIO
-from report_style import ReportStyle
+from report_builder import DataProcessor
+from report_builder.file_io import FileIO
+from report_builder.report_style import ReportStyle
 
 class Report:
     retail_inventory_fields = {
@@ -49,7 +49,7 @@ class Report:
         self.retail_inventory.loc[len(self.retail_inventory)] = DataProcessor.parse_product(index, product, self.expenses_df)
 
       if self.previous_retail_inventory_path:
-        self.__class__.copy_manual_fields(self.retail_inventory, self.previous_retail_inventory)
+        self.__class__.copy_manual_fields_in_place(self.previous_retail_inventory, self.retail_inventory)
 
       # new_index: list[int] = [num for num in range(1, len(self.retail_inventory) + 1)]
       # self.retail_inventory.index = new_index
@@ -58,19 +58,37 @@ class Report:
 
     def to_file(self, output_path: Path):
       FileIO.write_file(self.retail_inventory, output_path)
-      ReportStyle.style_sheet(output_path)
 
     @classmethod
-    def copy_manual_fields(cls, retail_inventory: pd.DataFrame, old_retail_inventory: pd.DataFrame):
-      for vin in old_retail_inventory['LAST 6 OF VIN']:
-        if vin in retail_inventory['LAST 6 OF VIN'].values:
-          old_value = old_retail_inventory.loc[old_retail_inventory['LAST 6 OF VIN'] == vin].iloc[0]
+    def copy_manual_fields_in_place(cls, from_retail_inventory: pd.DataFrame, to_retail_inventory: pd.DataFrame):
+      manual_fields: list[str] = [field for field in cls.retail_inventory_fields.keys() if field]
+      
+      # manual_fields_df = from_retail_inventory[['LAST 6 OF VIN', *manual_fields]]
 
-          for field, manual_field in cls.retail_inventory_fields.items():
-            if manual_field:
-              if 'DATE RECEIVED' == field and old_value[field] is pd.Timestamp:
-                old_value[field] = old_value[field].strftime('%m/%d/%Y')
+      to_vin_list: pd.Series = to_retail_inventory['LAST 6 OF VIN']
+      from_vin_list: pd.Series = from_retail_inventory['LAST 6 OF VIN']
 
-              retail_inventory.loc[
-                  retail_inventory['LAST 6 OF VIN'] == vin, field
-                ] = old_value[field]
+      def find(value: str, series: pd.Series):
+        for i, v in enumerate(series):
+          if v == value:
+            return i
+          
+        return -1
+
+      for to_vin in to_vin_list.values:
+
+        from_row_position = find(to_vin, from_vin_list)
+        if from_row_position == -1:
+          continue
+
+        to_row_position = find(to_vin, to_vin_list)
+
+        for field in manual_fields:
+            # if 'DATE RECEIVED' == field and previous_value[field] is pd.Timestamp:
+              # previous_value[field] = previous_value[field].strftime('%m/%d/%Y') # FORMATTING TIMESTAMP
+
+            to_retail_inventory.loc[to_row_position, field] = from_retail_inventory.loc[from_row_position, field]
+        
+    def save(self, output_path: Path) -> None:
+      self.to_file(output_path)
+      ReportStyle.style_sheet(output_path)
