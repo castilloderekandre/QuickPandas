@@ -20,8 +20,6 @@ class FileHandler:
         else:
             base_dir = Path(__file__).resolve().parent
 
-        
-            
         self.paths[key] = Path(path).absolute()
         label.configure(text=self.paths[key].name)
 

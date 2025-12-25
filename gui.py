@@ -1,14 +1,16 @@
 import pandas as pd
 pd.set_option('future.no_silent_downcasting', True)
 
+import traceback
+
 import customtkinter as ctk
 from CTkMessagebox import CTkMessagebox
 
-from file_handler import FileHandler
-from file_io import FileIO
-from data_processor import DataProcessor
-from report import Report
-from report_style import ReportStyle
+from report_builder.file_handler import FileHandler
+from report_builder.file_io import FileIO
+from report_builder import DataProcessor
+from report_builder.report import Report
+from report_builder.report_style import ReportStyle
 
 class GUI(ctk.CTk):
     def __init__(self):
@@ -88,11 +90,11 @@ class GUI(ctk.CTk):
 
       if not self.INVENTORY_KEY in self.filehandler.paths:
         msg = CTkMessagebox(
-            title='Warning',
-            message='Previous retail inventory file not selected. Manual changes will not carry over to new file',
-            icon='warning',
-            option_1='Continue',
-            option_2='Cancel'
+          title='Warning',
+          message='Previous retail inventory file not selected. Manual changes will not carry over to new file',
+          icon='warning',
+          option_1='Continue',
+          option_2='Cancel'
         )
 
         if msg.get() == 'Cancel':
@@ -111,7 +113,12 @@ class GUI(ctk.CTk):
         self.filehandler.paths.get(self.INVENTORY_KEY)
       )
 
-      report.generate()
-      report.save(self.filehandler.paths[ self.OUTPUT_KEY ])
+      try:
+        report.generate()
+        report.save(self.filehandler.paths[ self.OUTPUT_KEY ])
+      except Exception as e:
+        print("Error!")
+        print(e)
+        traceback.print_exc()
 
       del self.filehandler.paths[ self.OUTPUT_KEY ]

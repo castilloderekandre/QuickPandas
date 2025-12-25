@@ -1,6 +1,6 @@
 import pandas as pd
 from pathlib import Path
-from data_processor import DataProcessor
+from . import DataProcessor
 
 class FileIO:
     @classmethod
@@ -20,8 +20,7 @@ class FileIO:
         df = pd.read_excel(path, engine='openpyxl')
         return df
 
-    
-
     @classmethod
     def write_file(cls, df: pd.DataFrame, path: Path):
-        df.to_excel(path)
+      with pd.ExcelWriter(path, engine='openpyxl', datetime_format='mm/dd/yy') as writer:
+        df.to_excel(writer)
