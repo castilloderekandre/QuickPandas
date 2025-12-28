@@ -68,7 +68,7 @@ class Report:
       to_vin_list: pd.Series = to_retail_inventory['LAST 6 OF VIN']
       from_vin_list: pd.Series = from_retail_inventory['LAST 6 OF VIN']
 
-      def find(value: str, series: pd.Series):
+      def find(value: str, series: pd.Series) -> int:
         for i, v in enumerate(series):
           if v == value:
             return i

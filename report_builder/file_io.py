@@ -22,5 +22,4 @@ class FileIO:
 
     @classmethod
     def write_file(cls, df: pd.DataFrame, path: Path):
-      with pd.ExcelWriter(path, engine='openpyxl', datetime_format='mm/dd/yy') as writer:
-        df.to_excel(writer)
+        df.to_excel(path)
