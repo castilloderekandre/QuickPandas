@@ -6,11 +6,11 @@ import traceback
 import customtkinter as ctk
 from CTkMessagebox import CTkMessagebox
 
-from report_builder.file_handler import FileHandler
-from report_builder.file_io import FileIO
-from report_builder import DataProcessor
-from report_builder.report import Report
-from report_builder.report_style import ReportStyle
+from Report_Builder.file_handler import FileHandler
+from Report_Builder.file_io import FileIO
+from Report_Builder import DataProcessor
+from Report_Builder.report import Report
+from Report_Builder.report_style import ReportStyle
 
 class GUI(ctk.CTk):
     def __init__(self):
