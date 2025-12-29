@@ -1,8 +1,8 @@
 import pandas as pd
 from pathlib import Path
-from report_builder import DataProcessor
-from report_builder.file_io import FileIO
-from report_builder.report_style import ReportStyle
+from Report_Builder import DataProcessor
+from Report_Builder.file_io import FileIO
+from Report_Builder.report_style import ReportStyle
 
 class Report:
     retail_inventory_fields = {
@@ -24,18 +24,19 @@ class Report:
         }
 
     def __init__(self, inventory_path: Path, expenses_path: Path, previous_retail_inventory_path: Path | None = None):
-      self.inventory_path = inventory_path
-      self.expenses_path = expenses_path
-      self.previous_retail_inventory_path = previous_retail_inventory_path
+      self.inventory_path: Path = inventory_path
+      self.expenses_path: Path = expenses_path
+      self.previous_retail_inventory_path: Path | None = previous_retail_inventory_path
+      self.export_path: Path = Path()
 
     @classmethod
-    def empty_inventory_schema(cls):
-      empty_inventory = {field: [] for field in Report.retail_inventory_fields}
+    def empty_inventory_schema(cls) -> dict[str, list]:
+      empty_inventory: dict = {field: [] for field in Report.retail_inventory_fields}
       return empty_inventory
 
     def load_files(self):
-      self.inventory_df = DataProcessor.clean_inventory(FileIO.read_file(self.inventory_path))
-      self.expenses_df = DataProcessor.clean_expenses(FileIO.read_file(self.expenses_path))
+      self.inventory_df: pd.DataFrame = DataProcessor.clean_inventory(FileIO.read_file(self.inventory_path))
+      self.expenses_df: pd.DataFrame = DataProcessor.clean_expenses(FileIO.read_file(self.expenses_path))
       
       if self.previous_retail_inventory_path:
         self.previous_retail_inventory = FileIO.read_file(self.previous_retail_inventory_path, True)
@@ -68,7 +69,7 @@ class Report:
       to_vin_list: pd.Series = to_retail_inventory['LAST 6 OF VIN']
       from_vin_list: pd.Series = from_retail_inventory['LAST 6 OF VIN']
 
-      def find(value: str, series: pd.Series):
+      def find(value: str, series: pd.Series) -> int:
         for i, v in enumerate(series):
           if v == value:
             return i
@@ -89,6 +90,7 @@ class Report:
 
             to_retail_inventory.loc[to_row_position, field] = from_retail_inventory.loc[from_row_position, field]
         
-    def save(self, output_path: Path) -> None:
-      self.to_file(output_path)
-      ReportStyle.style_sheet(output_path)
+    def save(self, export_path: Path) -> None:
+      self.to_file(export_path)
+      self.export_path = export_path
+      ReportStyle.style_sheet(export_path)

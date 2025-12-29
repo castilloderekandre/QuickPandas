@@ -15,13 +15,24 @@ class FileHandler:
         if not path:
             return
         
-        if getattr(sys, 'frozen', False):
-            base_dir = Path(sys.executable).parent
-        else:
-            base_dir = Path(__file__).resolve().parent
+        # if getattr(sys, 'frozen', False):
+        #     base_dir = Path(sys.executable).parent
+        # else:
+        #     base_dir = Path(__file__).resolve().parent
 
         self.paths[key] = Path(path).absolute()
         label.configure(text=self.paths[key].name)
+
+    def select_files(self, key, label):
+        paths = filedialog.askopenfilenames(
+            title='Select multiple Excel files',
+            filetypes=[('Excel files', '*.xls'), ('Excel files', '*.xlsx')]
+        )
+
+        if not paths:
+            return
+        
+        # FINISH LATER
 
     def select_directory(self, key):
         path = filedialog.asksaveasfilename(
