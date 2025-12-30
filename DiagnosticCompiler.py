@@ -29,6 +29,7 @@ class DiagnosticCompiler:
 
     pprint.pprint(list(self.vehicle_fields_dict.values())[0].vin)
     pprint.pprint(list(self.vehicle_fields_dict.values())[0].history)
+    self.use_named_tuples()
     
 
   def make_vehicle_trackers(self) -> None:
@@ -41,7 +42,13 @@ class DiagnosticCompiler:
 
         self.vehicle_fields_dict[vin].add_data(report.export_path, row)
     
-    
+  def use_named_tuples(self) -> None: 
+    for report in self.report_list:
+      df = report.retail_inventory
+      for row in df.itertuples():
+        vin_: str = str(row._1)
+        if vin_.__eq__('KP2197'):
+          print(row)
 
 
   def get_paths_from(self, path: Path, file_globbing_expression: str) -> list[Path]:
