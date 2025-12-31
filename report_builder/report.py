@@ -11,7 +11,7 @@ class Report:
             'MAKE': False, 
             'MODEL': False, 
             'MILEAGE': False, 
-            'LOCATION': False, 
+            'LOCATION': True, 
             'INVENTORY ($)': False, 
             'EXPENSES ($)': False, 
             'TOTAL INVESTED ($)': False, 
@@ -40,6 +40,7 @@ class Report:
       
       if self.previous_retail_inventory_path:
         self.previous_retail_inventory = FileIO.read_file(self.previous_retail_inventory_path, True)
+        print(self.previous_retail_inventory)
 
     def generate(self):
       self.load_files()
@@ -48,7 +49,7 @@ class Report:
 
       for index, product in self.inventory_df.iterrows():
         self.retail_inventory.loc[len(self.retail_inventory)] = DataProcessor.parse_product(index, product, self.expenses_df)
-
+        
       if self.previous_retail_inventory_path:
         self.__class__.copy_manual_fields_in_place(self.previous_retail_inventory, self.retail_inventory)
 
@@ -62,9 +63,8 @@ class Report:
 
     @classmethod
     def copy_manual_fields_in_place(cls, from_retail_inventory: pd.DataFrame, to_retail_inventory: pd.DataFrame):
-      manual_fields: list[str] = [field for field in cls.retail_inventory_fields.keys() if field]
-      
-      # manual_fields_df = from_retail_inventory[['LAST 6 OF VIN', *manual_fields]]
+      print(to_retail_inventory['LOCATION'])
+      manual_fields: list[str] = [field for field, value in cls.retail_inventory_fields.items() if value]
 
       to_vin_list: pd.Series = to_retail_inventory['LAST 6 OF VIN']
       from_vin_list: pd.Series = from_retail_inventory['LAST 6 OF VIN']

@@ -52,7 +52,7 @@ class DataProcessor:
         return breakdown
     
     @staticmethod
-    def parse_product(index, product, expenses: pd.DataFrame):
+    def parse_product(index, product: pd.Series, expenses: pd.DataFrame) -> list:
         schema: list[str] = [ 'Mileage' ]
         vin: str = product.SKU[-6:]
         in_inventory = product['Purchase Cost']

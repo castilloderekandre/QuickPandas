@@ -16,9 +16,7 @@ class DiagnosticCompiler:
 
   def autorun(self) -> None:
     inventory_paths: list[Path] = self.get_paths_from(self.REPORT_PATH, 'inventory_*.xls')
-    # pprint.pprint(inventory_paths)
     expense_paths: list[Path] = self.get_paths_from(self.REPORT_PATH, 'expenses_*.xlsx')
-    pprint.pprint(expense_paths)
 
     self.generate_reports(inventory_paths, expense_paths)
 
@@ -27,9 +25,9 @@ class DiagnosticCompiler:
     for vehicle_tracker in self.vehicle_fields_dict.values():
       vehicle_tracker.get_history()
 
-    pprint.pprint(list(self.vehicle_fields_dict.values())[0].vin)
-    pprint.pprint(list(self.vehicle_fields_dict.values())[0].history)
-    self.use_named_tuples()
+    # pprint.pprint(list(self.vehicle_fields_dict.values())[0].vin)
+    # pprint.pprint(list(self.vehicle_fields_dict.values())[0].history)
+    # self.use_named_tuples()
     
 
   def make_vehicle_trackers(self) -> None:
@@ -79,6 +77,9 @@ class DiagnosticCompiler:
 
     count: int = 1
     for inventory_path, expenses_path in zip(inventory_list, expenses_list):
+      if count == 1:
+        count += 1
+        continue
 
       report: Report = Report(inventory_path, expenses_path)
       if count > 1:
