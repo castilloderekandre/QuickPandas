@@ -16,9 +16,7 @@ class DiagnosticCompiler:
 
   def autorun(self) -> None:
     inventory_paths: list[Path] = self.get_paths_from(self.REPORT_PATH, 'inventory_*.xls')
-    # pprint.pprint(inventory_paths)
     expense_paths: list[Path] = self.get_paths_from(self.REPORT_PATH, 'expenses_*.xlsx')
-    pprint.pprint(expense_paths)
 
     self.generate_reports(inventory_paths, expense_paths)
 
@@ -27,8 +25,9 @@ class DiagnosticCompiler:
     for vehicle_tracker in self.vehicle_fields_dict.values():
       vehicle_tracker.get_history()
 
-    pprint.pprint(list(self.vehicle_fields_dict.values())[0].vin)
-    pprint.pprint(list(self.vehicle_fields_dict.values())[0].history)
+    # pprint.pprint(list(self.vehicle_fields_dict.values())[0].vin)
+    # pprint.pprint(list(self.vehicle_fields_dict.values())[0].history)
+    # self.use_named_tuples()
     
 
   def make_vehicle_trackers(self) -> None:
@@ -41,7 +40,13 @@ class DiagnosticCompiler:
 
         self.vehicle_fields_dict[vin].add_data(report.export_path, row)
     
-    
+  def use_named_tuples(self) -> None: 
+    for report in self.report_list:
+      df = report.retail_inventory
+      for row in df.itertuples():
+        vin_: str = str(row._1)
+        if vin_.__eq__('KP2197'):
+          print(row)
 
 
   def get_paths_from(self, path: Path, file_globbing_expression: str) -> list[Path]:
@@ -73,11 +78,9 @@ class DiagnosticCompiler:
     count: int = 1
     for inventory_path, expenses_path in zip(inventory_list, expenses_list):
 
-      report: Report = Report(inventory_path, expenses_path)
+      report: Report = Report(inventory_path, expenses_path, Path(f"{self.REPORT_PATH}\\edited_retail_inventory.xlsx"))
       if count > 1:
         report: Report = Report(inventory_path, expenses_path, Path(f'{self.REPORT_PATH}\\{self.BASE_FILE_NAME}{count-1}.xlsx'))
-      else:
-        report: Report = Report(inventory_path, expenses_path, Path("C:\\Taji\\GitHub\\QuickPandas\\Reports\\edited_retail_inventory.xlsx"))
       
 
       report.generate()
