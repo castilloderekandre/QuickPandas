@@ -2,6 +2,7 @@ import re
 import pandas as pd
 from openpyxl import load_workbook
 from pathlib import Path
+pd.set_option('future.no_silent_downcasting', True)
 
 class DataProcessor:
     inventory_fields = [
@@ -129,8 +130,7 @@ class DataProcessor:
                 existing_expense_name_list.append(expense_name)
         expenses = expenses[existing_expense_name_list]
 
-        expenses.fillna(0, inplace=True)
-        expenses = expenses.infer_objects(copy=False)
+        expenses = expenses.fillna(0).infer_objects(copy=False)
 
         return expenses
 

@@ -40,7 +40,6 @@ class Report:
       
       if self.previous_retail_inventory_path:
         self.previous_retail_inventory = FileIO.read_file(self.previous_retail_inventory_path, True)
-        print(self.previous_retail_inventory)
 
     def generate(self):
       self.load_files()
@@ -63,6 +62,7 @@ class Report:
 
     @classmethod
     def copy_manual_fields_in_place(cls, from_retail_inventory: pd.DataFrame, to_retail_inventory: pd.DataFrame):
+      print(from_retail_inventory['LOCATION'])
       print(to_retail_inventory['LOCATION'])
       manual_fields: list[str] = [field for field, value in cls.retail_inventory_fields.items() if value]
 

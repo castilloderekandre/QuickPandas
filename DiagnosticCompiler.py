@@ -77,15 +77,10 @@ class DiagnosticCompiler:
 
     count: int = 1
     for inventory_path, expenses_path in zip(inventory_list, expenses_list):
-      if count == 1:
-        count += 1
-        continue
 
-      report: Report = Report(inventory_path, expenses_path)
+      report: Report = Report(inventory_path, expenses_path, Path(f"{self.REPORT_PATH}\\edited_retail_inventory.xlsx"))
       if count > 1:
         report: Report = Report(inventory_path, expenses_path, Path(f'{self.REPORT_PATH}\\{self.BASE_FILE_NAME}{count-1}.xlsx'))
-      else:
-        report: Report = Report(inventory_path, expenses_path, Path("C:\\Taji\\GitHub\\QuickPandas\\Reports\\edited_retail_inventory.xlsx"))
       
 
       report.generate()
