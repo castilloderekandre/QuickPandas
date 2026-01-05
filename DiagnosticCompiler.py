@@ -23,7 +23,7 @@ class DiagnosticCompiler:
     self.make_vehicle_trackers()
     
     for vehicle_tracker in self.vehicle_fields_dict.values():
-      vehicle_tracker.get_history()
+      vehicle_tracker.update_history()
 
     # pprint.pprint(list(self.vehicle_fields_dict.values())[0].vin)
     # pprint.pprint(list(self.vehicle_fields_dict.values())[0].history)

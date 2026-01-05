@@ -23,7 +23,7 @@ class VehicleTracker:
     self.add_path(path)
     self.add_series(series)
 
-  def get_history(self) -> None:
+  def update_history(self) -> None:
     self.history = self.diff_data()
 
   def diff_data(self) -> dict[str, list]:
